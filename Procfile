@@ -1,0 +1,1 @@
+web: cd projeto_ia && python main.py
