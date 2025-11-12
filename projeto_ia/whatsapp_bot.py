@@ -113,29 +113,27 @@ class WhatsAppBot:
             return False
 
     def iniciar_navegador(self):
+        """Inicia navegador compatível com cloud"""
         try:
-            from selenium.webdriver.chrome.service import Service
+            from selenium import webdriver
             from selenium.webdriver.chrome.options import Options
-            import tempfile
-            import os
             
             options = Options()
             
-            # ✅ Usa diretório temporário do sistema (sempre tem permissão)
-            temp_profile = tempfile.mkdtemp()
-            options.add_argument(f"--user-data-dir={temp_profile}")
+            # Configurações para cloud
+            options.add_argument("--no-sandbox")
+            options.add_argument("--disable-dev-shm-usage")
+            options.add_argument("--disable-gpu")
+            options.add_argument("--headless")  # ← IMPORTANTE: modo sem interface
             
-            options.add_argument("--disable-blink-features=AutomationControlled")
-            options.add_experimental_option("excludeSwitches", ["enable-automation"])
+            # No Railway, o Chrome já vem instalado
+            self.driver = webdriver.Chrome(options=options)
             
-            service = Service(executable_path=r'chromedriver.exe')
-            self.driver = webdriver.Chrome(service=service, options=options)
-            
-            print(f"✅ Chrome iniciado com perfil temporário: {temp_profile}")
+            print("✅ Navegador iniciado em modo cloud!")
             return True
             
         except Exception as e:
-            print(f"❌ Erro ao iniciar Chrome: {e}")
+            print(f"❌ Erro ao iniciar navegador: {e}")
             return False
     
     def injetar_controle_whatsapp(self):
