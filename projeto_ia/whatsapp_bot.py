@@ -45,15 +45,21 @@ class WhatsAppBot:
     def _configurar_ia(self):
         """Configura o cliente da IA Gemini"""
         try:
-            if Config.GEMINI_API_KEY:
-                self.client = genai.Client(api_key=Config.GEMINI_API_KEY)
+            import os
+            # Tenta pegar a chave diretamente da variável de ambiente
+            api_key = os.getenv('GEMINI_API_KEY')
+            
+            if api_key:
+                self.client = genai.Client(api_key=api_key)
                 self.ia_disponivel = True
-                print("✅ IA Gemini configurada")
+                print(f"✅ IA Gemini configurada - Chave: {api_key[:10]}...")  # Debug
             else:
                 self.ia_disponivel = False
+                print("❌ GEMINI_API_KEY não encontrada nas variáveis de ambiente")
                 print("⚠️  IA não disponível, usando respostas locais")
-        except:
+        except Exception as e:
             self.ia_disponivel = False
+            print(f"❌ Erro ao configurar IA: {e}")
             print("⚠️  IA não disponível, usando respostas locais")
     
     def _adicionar_ao_historico(self, contato, mensagem, eh_bot=False):
@@ -113,27 +119,33 @@ class WhatsAppBot:
             return False
 
     def iniciar_navegador(self):
-        """Inicia navegador compatível com cloud"""
+        """Inicia o navegador Chrome"""
         try:
-            from selenium import webdriver
+            from selenium.webdriver.chrome.service import Service
             from selenium.webdriver.chrome.options import Options
+            import os
             
             options = Options()
             
-            # Configurações para cloud
-            options.add_argument("--no-sandbox")
-            options.add_argument("--disable-dev-shm-usage")
-            options.add_argument("--disable-gpu")
-            options.add_argument("--headless")  # ← IMPORTANTE: modo sem interface
+            # ✅ CAMINHO ABSOLUTO - resolve problemas de permissão
+            profile_path = os.path.abspath("./chrome_profile")
+            options.add_argument(f"--user-data-dir={profile_path}")
             
-            # No Railway, o Chrome já vem instalado
-            self.driver = webdriver.Chrome(options=options)
+            # Configurações importantes
+            options.add_argument("--disable-blink-features=AutomationControlled")
+            options.add_argument("--no-first-run")
+            options.add_argument("--no-default-browser-check")
+            options.add_experimental_option("excludeSwitches", ["enable-automation"])
             
-            print("✅ Navegador iniciado em modo cloud!")
+            # ChromeDriver manual
+            service = Service(executable_path=r'chromedriver.exe')
+            self.driver = webdriver.Chrome(service=service, options=options)
+            
+            print("✅ Chrome iniciado!")
             return True
             
         except Exception as e:
-            print(f"❌ Erro ao iniciar navegador: {e}")
+            print(f"❌ Erro ao iniciar Chrome: {e}")
             return False
     
     def injetar_controle_whatsapp(self):

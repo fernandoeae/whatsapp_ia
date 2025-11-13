@@ -127,9 +127,10 @@ class ServidorControle:
                     self._set_cors_headers()
                     self.end_headers()
 
+        
+
         def start_server():
             try:
-                # Tenta diferentes portas
                 portas_tentativas = [self.porta, 8081, 8082, 8083]
                 
                 for porta in portas_tentativas:
@@ -137,7 +138,8 @@ class ServidorControle:
                         print(f"🔄 Tentando iniciar servidor na porta {porta}...")
                         self.server = HTTPServer(('0.0.0.0', porta), Handler)
                         self.server.bot = self.bot
-                        self.porta = porta  # Atualiza a porta usada
+                        self.server.timeout = 1  # ⬅️ Timeout para shutdown
+                        self.porta = porta
                         
                         print(f"✅ Servidor de controle iniciado com sucesso!")
                         print(f"📍 URL: http://{self.host}:{porta}")
@@ -171,35 +173,41 @@ class ServidorControle:
         return self._testar_servidor()
     
     def _testar_servidor(self):
-        """Testa se o servidor está respondendo"""
-        import urllib.request
-        import urllib.error
-        
-        print("🔍 Testando conexão com o servidor...")
-        
-        # Tenta conectar via IP local
-        try:
-            with urllib.request.urlopen(f'http://{self.host}:{self.porta}/status', timeout=5) as response:
-                if response.getcode() == 200:
-                    print(f"✅ Servidor respondendo em http://{self.host}:{self.porta}")
-                    return True
-        except Exception as e:
-            print(f"❌ Falha ao conectar via IP {self.host}: {e}")
-        
-        # Tenta conectar via localhost
-        try:
-            with urllib.request.urlopen(f'http://localhost:{self.porta}/status', timeout=5) as response:
-                if response.getcode() == 200:
-                    print(f"✅ Servidor respondendo em http://localhost:{self.porta}")
-                    return True
-        except Exception as e:
-            print(f"❌ Falha ao conectar via localhost: {e}")
-        
-        print("❌ Servidor não está respondendo em nenhuma URL")
-        return False
+            """Testa se o servidor está respondendo"""
+            try:
+                import urllib.request
+                import urllib.error
+                
+                print("🔍 Testando conexão com o servidor...")
+                
+                # Testa primeiro via localhost (mais confiável no servidor)
+                urls = [
+                    f'http://localhost:{self.porta}/status',
+                    f'http://127.0.0.1:{self.porta}/status', 
+                    f'http://{self.host}:{self.porta}/status'
+                ]
+                
+                for url in urls:
+                    try:
+                        with urllib.request.urlopen(url, timeout=5) as response:
+                            if response.getcode() == 200:
+                                print(f"✅ Servidor respondendo em {url}")
+                                return True
+                    except Exception as e:
+                        print(f"⚠️  Não conseguiu conectar em {url}: {e}")
+                        continue
+                
+                print("❌ Servidor não está respondendo em nenhuma URL testada")
+                return False
+                
+            except Exception as e:
+                print(f"❌ Erro no teste do servidor: {e}")
+                return False
 
     def parar(self):
         """Para o servidor"""
         if self.server:
+            print("🛑 Parando servidor...")
             self.server.shutdown()
-            print("🛑 Servidor parado")
+            self.server.server_close()  # ⬅️ IMPORTANTE: libera a porta
+            print("✅ Servidor parado com sucesso")
