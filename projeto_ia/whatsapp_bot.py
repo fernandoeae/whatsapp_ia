@@ -1,4 +1,3 @@
-# whatsapp_bot.py
 from selenium import webdriver
 from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.common.keys import Keys
@@ -119,7 +118,7 @@ class WhatsAppBot:
             return False
 
     def iniciar_navegador(self):
-        """Inicia o navegador Chrome"""
+        """Inicia o navegador Chrome no Linux"""
         try:
             from selenium.webdriver.chrome.service import Service
             from selenium.webdriver.chrome.options import Options
@@ -135,10 +134,15 @@ class WhatsAppBot:
             options.add_argument("--disable-blink-features=AutomationControlled")
             options.add_argument("--no-first-run")
             options.add_argument("--no-default-browser-check")
+            options.add_argument("--no-sandbox")  # ✅ ESSENCIAL para Linux
+            options.add_argument("--disable-dev-shm-usage")  # ✅ ESSENCIAL para Linux
             options.add_experimental_option("excludeSwitches", ["enable-automation"])
             
-            # ChromeDriver manual
-            service = Service(executable_path=r'chromedriver.exe')
+            # ✅ USAR CHROMIUM (que já funciona no seu sistema)
+            options.binary_location = "/usr/bin/chromium-browser"
+            
+            # ✅ ChromeDriver para Linux (sem o .exe)
+            service = Service(executable_path='/usr/local/bin/chromedriver')
             self.driver = webdriver.Chrome(service=service, options=options)
             
             print("✅ Chrome iniciado!")
