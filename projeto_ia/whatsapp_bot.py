@@ -118,38 +118,50 @@ class WhatsAppBot:
             return False
 
     def iniciar_navegador(self):
-        """Inicia o navegador Chrome no Linux"""
+        """Inicia o navegador Chromium no Linux"""
         try:
-            from selenium.webdriver.chrome.service import Service
             from selenium.webdriver.chrome.options import Options
             import os
             
             options = Options()
             
-            # ✅ CAMINHO ABSOLUTO - resolve problemas de permissão
+            # Caminho do perfil
             profile_path = os.path.abspath("./chrome_profile")
             options.add_argument(f"--user-data-dir={profile_path}")
             
-            # Configurações importantes
-            options.add_argument("--disable-blink-features=AutomationControlled")
-            options.add_argument("--no-first-run")
-            options.add_argument("--no-default-browser-check")
-            options.add_argument("--no-sandbox")  # ✅ ESSENCIAL para Linux
-            options.add_argument("--disable-dev-shm-usage")  # ✅ ESSENCIAL para Linux
-            options.add_experimental_option("excludeSwitches", ["enable-automation"])
+            # 🔥 CONFIGURAÇÕES ESSENCIAIS PARA SERVIDOR HEADLESS
+            options.add_argument("--no-sandbox")
+            options.add_argument("--disable-dev-shm-usage")
+            options.add_argument("--remote-debugging-port=9222")
+            options.add_argument("--disable-gpu")
+            options.add_argument("--window-size=1920,1080")
             
-            # ✅ USAR CHROMIUM (que já funciona no seu sistema)
+            # 🔥 RESOLVE O ERRO DevToolsActivePort
+            options.add_argument("--no-default-browser-check")
+            options.add_argument("--disable-extensions")
+            options.add_argument("--disable-plugins")
+            options.add_argument("--disable-background-timer-throttling")
+            options.add_argument("--disable-backgrounding-occluded-windows")
+            options.add_argument("--disable-renderer-backgrounding")
+            options.add_argument("--disable-web-security")
+            options.add_argument("--disable-features=VizDisplayCompositor")
+            
+            # 🔥 PORTAS ALTERNATIVAS para evitar conflito
+            options.add_argument("--remote-debugging-address=0.0.0.0")
+            
+            # Usar Chromium
             options.binary_location = "/usr/bin/chromium-browser"
             
-            # ✅ ChromeDriver para Linux (sem o .exe)
-            service = Service(executable_path='/usr/local/bin/chromedriver')
-            self.driver = webdriver.Chrome(service=service, options=options)
+            # 🔥 DESABILITAR LOGS DESNECESSÁRIOS
+            options.add_experimental_option('excludeSwitches', ['enable-logging'])
             
-            print("✅ Chrome iniciado!")
+            self.driver = webdriver.Chrome(options=options)
+            
+            print("✅ Navegador iniciado com sucesso!")
             return True
             
         except Exception as e:
-            print(f"❌ Erro ao iniciar Chrome: {e}")
+            print(f"❌ Erro ao iniciar navegador: {e}")
             return False
     
     def injetar_controle_whatsapp(self):
