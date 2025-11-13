@@ -118,23 +118,40 @@ class WhatsAppBot:
             return False
 
     def iniciar_navegador(self):
-        """Usa Chromium que já funciona"""
+        """Inicia o Chromium com o chromedriver correto"""
         try:
             from selenium.webdriver.chrome.options import Options
+            from selenium.webdriver.chrome.service import Service
+            import os
             
             options = Options()
+            
+            # 🔥 CONFIGURAÇÕES ESSENCIAIS
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-dev-shm-usage")
+            options.add_argument("--headless=new")  # Modo headless moderno
             options.add_argument("--disable-gpu")
             options.add_argument("--window-size=1920,1080")
+            options.add_argument("--remote-debugging-port=9222")
             
-            # 🔥 USAR CHROMIUM (que já sabemos que funciona)
+            # 🔥 CONFIGURAÇÕES DE ESTABILIDADE
+            options.add_argument("--no-first-run")
+            options.add_argument("--no-default-browser-check")
+            options.add_argument("--disable-extensions")
+            options.add_argument("--disable-plugins")
+            
+            # Perfil (se necessário)
+            profile_path = os.path.abspath("./chrome_profile")
+            options.add_argument(f"--user-data-dir={profile_path}")
+            
+            # 🔥 CHROMIUM
             options.binary_location = "/usr/bin/chromium-browser"
             
-            # 🔥 SEM Service - Chromium funciona direto
-            self.driver = webdriver.Chrome(options=options)
+            # 🔥 USAR CHROMEDRIVER COMPATÍVEL ENCONTRADO
+            service = Service(executable_path="/usr/lib/chromium-browser/chromedriver")
+            self.driver = webdriver.Chrome(service=service, options=options)
             
-            print("✅ Navegador iniciado com Chromium!")
+            print("✅ Chromium iniciado com chromedriver compatível!")
             return True
             
         except Exception as e:
