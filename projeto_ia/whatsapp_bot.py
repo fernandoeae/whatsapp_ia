@@ -118,45 +118,27 @@ class WhatsAppBot:
             return False
 
     def iniciar_navegador(self):
-        """Inicia o Google Chrome no Linux"""
+        """Usa Chromium que já funciona"""
         try:
             from selenium.webdriver.chrome.options import Options
-            from selenium.webdriver.chrome.service import Service
-            import os
             
             options = Options()
-            
-            # Caminho do perfil
-            profile_path = os.path.abspath("./chrome_profile")
-            options.add_argument(f"--user-data-dir={profile_path}")
-            
-            # 🔥 CONFIGURAÇÕES ESSENCIAIS PARA CHROME
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-dev-shm-usage")
-            options.add_argument("--remote-debugging-port=9222")
             options.add_argument("--disable-gpu")
             options.add_argument("--window-size=1920,1080")
             
-            # 🔥 RESOLVE O ERRO DevToolsActivePort
-            options.add_argument("--no-default-browser-check")
-            options.add_argument("--disable-extensions")
-            options.add_argument("--disable-plugins")
+            # 🔥 USAR CHROMIUM (que já sabemos que funciona)
+            options.binary_location = "/usr/bin/chromium-browser"
             
-            # 🔥 CAMINHO DO CHROME REAL (não Chromium)
-            options.binary_location = "/usr/bin/google-chrome"
+            # 🔥 SEM Service - Chromium funciona direto
+            self.driver = webdriver.Chrome(options=options)
             
-            # 🔥 WebDriver Manager para gerenciar automaticamente
-            from webdriver_manager.chrome import ChromeDriverManager
-            from selenium.webdriver.chrome.service import Service
-            
-            service = Service(ChromeDriverManager().install())
-            self.driver = webdriver.Chrome(service=service, options=options)
-            
-            print("✅ Google Chrome iniciado com sucesso!")
+            print("✅ Navegador iniciado com Chromium!")
             return True
             
         except Exception as e:
-            print(f"❌ Erro ao iniciar Chrome: {e}")
+            print(f"❌ Erro: {e}")
             return False
     
     def injetar_controle_whatsapp(self):
