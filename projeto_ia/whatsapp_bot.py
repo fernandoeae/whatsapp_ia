@@ -118,9 +118,10 @@ class WhatsAppBot:
             return False
 
     def iniciar_navegador(self):
-        """Inicia o navegador Chromium no Linux"""
+        """Inicia o Google Chrome no Linux"""
         try:
             from selenium.webdriver.chrome.options import Options
+            from selenium.webdriver.chrome.service import Service
             import os
             
             options = Options()
@@ -129,7 +130,7 @@ class WhatsAppBot:
             profile_path = os.path.abspath("./chrome_profile")
             options.add_argument(f"--user-data-dir={profile_path}")
             
-            # 🔥 CONFIGURAÇÕES ESSENCIAIS PARA SERVIDOR HEADLESS
+            # 🔥 CONFIGURAÇÕES ESSENCIAIS PARA CHROME
             options.add_argument("--no-sandbox")
             options.add_argument("--disable-dev-shm-usage")
             options.add_argument("--remote-debugging-port=9222")
@@ -140,28 +141,22 @@ class WhatsAppBot:
             options.add_argument("--no-default-browser-check")
             options.add_argument("--disable-extensions")
             options.add_argument("--disable-plugins")
-            options.add_argument("--disable-background-timer-throttling")
-            options.add_argument("--disable-backgrounding-occluded-windows")
-            options.add_argument("--disable-renderer-backgrounding")
-            options.add_argument("--disable-web-security")
-            options.add_argument("--disable-features=VizDisplayCompositor")
             
-            # 🔥 PORTAS ALTERNATIVAS para evitar conflito
-            options.add_argument("--remote-debugging-address=0.0.0.0")
+            # 🔥 CAMINHO DO CHROME REAL (não Chromium)
+            options.binary_location = "/usr/bin/google-chrome"
             
-            # Usar Chromium
-            options.binary_location = "/usr/bin/chromium-browser"
+            # 🔥 WebDriver Manager para gerenciar automaticamente
+            from webdriver_manager.chrome import ChromeDriverManager
+            from selenium.webdriver.chrome.service import Service
             
-            # 🔥 DESABILITAR LOGS DESNECESSÁRIOS
-            options.add_experimental_option('excludeSwitches', ['enable-logging'])
+            service = Service(ChromeDriverManager().install())
+            self.driver = webdriver.Chrome(service=service, options=options)
             
-            self.driver = webdriver.Chrome(options=options)
-            
-            print("✅ Navegador iniciado com sucesso!")
+            print("✅ Google Chrome iniciado com sucesso!")
             return True
             
         except Exception as e:
-            print(f"❌ Erro ao iniciar navegador: {e}")
+            print(f"❌ Erro ao iniciar Chrome: {e}")
             return False
     
     def injetar_controle_whatsapp(self):
