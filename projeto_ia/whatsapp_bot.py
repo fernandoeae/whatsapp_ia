@@ -1,8 +1,8 @@
+##whatsapp_bot.py
 from selenium import webdriver
-from selenium.webdriver.firefox.service import Service
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.keys import Keys
-from webdriver_manager.firefox import GeckoDriverManager
-from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import StaleElementReferenceException
 import time
@@ -40,6 +40,20 @@ class WhatsAppBot:
         
         print(f"🎭 {self.personalidade.dados['nome']} - {self.personalidade.dados['profissao']}")
         print(f"📅 Bot configurado para responder apenas mensagens de: {self.hoje.strftime('%d/%m/%Y')}")
+        self.vnc_manager = None
+        self.iniciar_vnc()
+    
+    def iniciar_vnc(self):
+        """Inicia servidor VNC para monitoramento"""
+        try:
+            from vnc_manager import VNCManager
+            self.vnc_manager = VNCManager()
+            self.vnc_manager.start()
+            print("✅ VNC iniciado para monitoramento")
+            print(f"📍 URL do VNC: http://31.97.251.184:6081/vnc.html")
+            
+        except Exception as e:
+            print(f"⚠️  VNC não disponível: {e}")
     
     def _configurar_ia(self):
         """Configura o cliente da IA Gemini"""
@@ -60,6 +74,36 @@ class WhatsAppBot:
             self.ia_disponivel = False
             print(f"❌ Erro ao configurar IA: {e}")
             print("⚠️  IA não disponível, usando respostas locais")
+
+    def inicializar_chrome(self):
+        """Inicializa o Chrome usando a função do servidor_controle"""
+        try:
+            print("🔄 Inicializando Chrome via servidor_controle...")
+            self.driver = self.servidor.setup_chrome()
+            
+            if self.driver:
+                print("✅ Chrome inicializado com sucesso!")
+                return True
+            else:
+                print("❌ Falha ao inicializar Chrome")
+                return False
+                
+        except Exception as e:
+            print(f"💥 Erro ao inicializar Chrome: {e}")
+            return False
+
+    def testar_chrome(self):
+        """Testa se o Chrome está funcionando corretamente"""
+        if self.driver:
+            try:
+                self.driver.get("https://web.whatsapp.com")
+                time.sleep(5)
+                titulo = self.driver.title
+                print(f"✅ Chrome testado com sucesso! Título: {titulo}")
+                return f"Chrome funcionando - {titulo}"
+            except Exception as e:
+                return f"Erro no Chrome: {e}"
+        return "Chrome não inicializado"
     
     def _adicionar_ao_historico(self, contato, mensagem, eh_bot=False):
         """✅ NOVO: Adiciona mensagem ao histórico da conversa"""
@@ -118,45 +162,8 @@ class WhatsAppBot:
             return False
 
     def iniciar_navegador(self):
-        """Inicia o Chromium com o chromedriver correto"""
-        try:
-            from selenium.webdriver.chrome.options import Options
-            from selenium.webdriver.chrome.service import Service
-            import os
-            
-            options = Options()
-            
-            # 🔥 CONFIGURAÇÕES ESSENCIAIS
-            options.add_argument("--no-sandbox")
-            options.add_argument("--disable-dev-shm-usage")
-            options.add_argument("--headless=new")  # Modo headless moderno
-            options.add_argument("--disable-gpu")
-            options.add_argument("--window-size=1920,1080")
-            options.add_argument("--remote-debugging-port=9222")
-            
-            # 🔥 CONFIGURAÇÕES DE ESTABILIDADE
-            options.add_argument("--no-first-run")
-            options.add_argument("--no-default-browser-check")
-            options.add_argument("--disable-extensions")
-            options.add_argument("--disable-plugins")
-            
-            # Perfil (se necessário)
-            profile_path = os.path.abspath("./chrome_profile")
-            options.add_argument(f"--user-data-dir={profile_path}")
-            
-            # 🔥 CHROMIUM
-            options.binary_location = "/usr/bin/chromium-browser"
-            
-            # 🔥 USAR CHROMEDRIVER COMPATÍVEL ENCONTRADO
-            service = Service(executable_path="/usr/lib/chromium-browser/chromedriver")
-            self.driver = webdriver.Chrome(service=service, options=options)
-            
-            print("✅ Chromium iniciado com chromedriver compatível!")
-            return True
-            
-        except Exception as e:
-            print(f"❌ Erro: {e}")
-            return False
+        """Inicia o Chrome usando a nova função centralizada"""
+        return self.inicializar_chrome()
     
     def injetar_controle_whatsapp(self):
         """Injeta controles diretamente na página do WhatsApp - CORRIGIDO"""
@@ -798,10 +805,15 @@ class WhatsAppBot:
         """Método principal de execução do bot"""
         try:
             if not self.iniciar_navegador():
+                print("❌ Falha ao iniciar navegador")
                 return
             
             # 🌐 Iniciar servidor de controle
-            self.servidor.iniciar()
+            print("🌐 Iniciando servidor de controle...")
+            if self.servidor.iniciar():
+                print("✅ Servidor de controle iniciado")
+            else:
+                print("⚠️  Servidor de controle não iniciou, mas continuando...")
             
             self.driver.get("https://web.whatsapp.com")
             print("🌐 WhatsApp Web carregado")
@@ -856,4 +868,4 @@ class WhatsAppBot:
         finally:
             if self.driver:
                 self.driver.quit()
-                print("👋 Firefox fechado!")
+                print("👋 Chrome fechado!")
