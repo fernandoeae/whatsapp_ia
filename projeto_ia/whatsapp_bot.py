@@ -48,7 +48,7 @@ class WhatsAppBot:
         try:
             from vnc_manager import VNCManager
             self.vnc_manager = VNCManager()
-            self.vnc_manager.start()
+            self.vnc_manager.start_vnc()
             print("✅ VNC iniciado para monitoramento")
             print(f"📍 URL do VNC: http://31.97.251.184:6081/vnc.html")
             

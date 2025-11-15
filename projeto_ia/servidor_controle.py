@@ -29,7 +29,7 @@ class ServidorControle:
             return "127.0.0.1"
 
     def setup_chrome(self):
-        """Configura Chrome em tela cheia para VNC"""
+        """Configura Chrome com SUA resolução correta"""
         try:
             print("🔄 Iniciando Chrome em tela cheia...")
             
@@ -39,39 +39,43 @@ class ServidorControle:
             
             chrome_options = Options()
             
-            # ✅ CONFIGURAÇÕES PARA TELA CHEIA
+            # ✅ SUAS CONFIGURAÇÕES ORIGINAIS QUE FUNCIONAVAM:
             chrome_options.add_argument('--no-sandbox')
             chrome_options.add_argument('--disable-dev-shm-usage')
-            chrome_options.add_argument('--window-size=1865,910')
-            chrome_options.add_argument('--start-maximized')  # ✅ MAXIMIZADO
-            chrome_options.add_argument('--kiosk')  # ✅ MODO QUASE TELA CHEIA
-
-            # ✅ CONFIGURAÇÕES PARA REMOVER SCROLL
-            chrome_options.add_argument('--hide-scrollbars')  # Esconde barras de scroll
-            chrome_options.add_argument('--disable-overlay-scrollbar')  # Remove scroll overlay
-            # ✅ BLOQUEAR CRIAÇÃO DE SCROLL
-            chrome_options.add_argument('--disable-smooth-scrolling')
-            chrome_options.add_argument('--force-device-scale-factor=1')
             
-            # Configurações de performance
+            # ⚠️  REMOVER configurações conflitantes de tamanho:
+            chrome_options.add_argument('--window-size=1865,910')  # ❌ REMOVER
+            # chrome_options.add_argument('--start-maximized')       # ❌ REMOVER  
+            # chrome_options.add_argument('--kiosk')                 # ❌ REMOVER
+            
+            
+            # ✅ CONFIGURAÇÕES DE PERFORMANCE (manter):
             chrome_options.add_argument('--disable-gpu')
             chrome_options.add_argument('--remote-debugging-port=9222')
             chrome_options.add_argument('--user-data-dir=/tmp/chrome_whatsapp')
             
-            # ✅ REMOVER barras de interface
+            # ✅ CONFIGURAÇÕES DE INTERFACE (manter):
             chrome_options.add_argument('--disable-infobars')
-            chrome_options.add_argument('--disable-extensions')
+            chrome_options.add_argument('--disable-extensions') 
             chrome_options.add_argument('--disable-notifications')
             
             service = Service('/usr/local/bin/chromedriver')
             driver = webdriver.Chrome(service=service, options=chrome_options)
 
-            print("✅ Chrome em tela cheia inicializado!")
+            print("✅ Chrome inicializado!")
             
-            # ✅ FORÇAR TELA CHEIA VIA JAVASCRIPT
+            # ✅ FORÇAR TAMANHO VIA JAVASCRIPT (MAIS EFETIVO):
             driver.get('https://web.whatsapp.com')
-            driver.execute_script("window.moveTo(0, 0); window.resizeTo(screen.width, screen.height);")
+            driver.execute_script("""
+                window.moveTo(0, 0);
+                window.resizeTo(1000, 720);
+                // Forçar redimensionamento
+                setTimeout(function() {
+                    window.resizeTo(1000, 720);
+                }, 1000);
+            """)
             
+            print("✅ Tela configurada para 1000x720 via JavaScript!")
             return driver
             
         except Exception as e:

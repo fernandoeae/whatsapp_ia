@@ -32,81 +32,91 @@ class VNCManager:
         os.system("pkill -f websockify")
         os.system("pkill -f novnc_proxy")
         time.sleep(2)
-            
-    def start(self):
-        """Inicia sistema VNC (método principal)"""
+
+    def _start_xvfb(self):
+        """Inicia Xvfb com resolução correta"""
         try:
-            print("🖥️  Iniciando VNC...")
-            
-            # Para processos existentes primeiro
-            self._cleanup_processes()
-            
-            # ✅ CORREÇÃO: Usar COMANDO IDÊNTICO ao que funciona
+            print("🔧 Criando Xvfb :1 com 1000x720x24...")
+            subprocess.Popen(["Xvfb", ":1", "-screen", "0", "1920x1080x24", "-ac"])
+            time.sleep(3)
+            os.environ["DISPLAY"] = ":1"
+            return True
+        except Exception as e:
+            print(f"❌ Erro ao iniciar Xvfb: {e}")
+            return False
+
+    def _start_x11vnc(self):
+        """Inicia x11vnc no display configurado"""
+        try:
+            print("🔧 Iniciando x11vnc...")
             vnc_cmd = f"x11vnc -display :1 -forever -shared -nopw -listen 0.0.0.0 -rfbport {self.vnc_port} -noxdamage"
-            self.vnc_process = subprocess.Popen(vnc_cmd, shell=True)  # ✅ shell=True
+            self.vnc_process = subprocess.Popen(vnc_cmd, shell=True)
             time.sleep(5)
-            
-            # ✅ CORREÇÃO: Verificar se VNC está realmente rodando
-            if not self.is_process_running("x11vnc"):
-                print("❌ x11vnc não iniciou corretamente")
-                return False
-            
-            # ✅ CORREÇÃO: Iniciar noVNC igual ao que funciona
+            return self.is_process_running("x11vnc")
+        except Exception as e:
+            print(f"❌ Erro ao iniciar x11vnc: {e}")
+            return False
+
+    def _start_novnc(self):
+        """Inicia noVNC de forma robusta"""
+        try:
             novnc_path = os.path.expanduser("~/noVNC")
-            if os.path.exists(novnc_path):
-                os.chdir(novnc_path)
-                
-                novnc_cmd = f"./utils/novnc_proxy --vnc localhost:{self.vnc_port} --listen {self.web_port}"
-                self.websockify_process = subprocess.Popen(novnc_cmd, shell=True)  # ✅ shell=True
-                time.sleep(3)
-                
-                if self.is_process_running("novnc_proxy"):
-                    print(f"✅ noVNC iniciado com sucesso na porta {self.web_port}")
-                else:
-                    print("❌ noVNC não iniciou corretamente")
-                    return False
-            else:
+            
+            if not os.path.exists(novnc_path):
                 print("❌ Diretório noVNC não encontrado")
                 return False
             
-            print(f"✅ VNC rodando: http://31.97.251.184:{self.web_port}/vnc.html")
+            # Método 1: novnc_proxy
+            print("🔄 Iniciando noVNC...")
+            original_dir = os.getcwd()
+            os.chdir(novnc_path)
+            
+            novnc_cmd = f"./utils/novnc_proxy --vnc localhost:{self.vnc_port} --listen {self.web_port}"
+            self.websockify_process = subprocess.Popen(novnc_cmd, shell=True)
+            
+            os.chdir(original_dir)
+            time.sleep(5)
+            
+            if self.is_process_running("novnc_proxy"):
+                print("✅ noVNC iniciado")
+                return True
+            
+            print("❌ noVNC não iniciou")
+            return False
+            
+        except Exception as e:
+            print(f"❌ Erro noVNC: {e}")
+            return False
+            
+    def start(self):
+        """Inicia sistema VNC completo"""
+        try:
+            print("🖥️  Iniciando VNC...")
+            
+            # Limpar processos
+            self._cleanup_processes()
+            
+            # Iniciar componentes na ordem correta
+            if not self._start_xvfb():
+                return False
+                
+            if not self._start_x11vnc():
+                return False
+                
+            if not self._start_novnc():
+                print("⚠️  noVNC falhou, mas x11vnc está rodando na porta 5902")
+                return False
+            
+            print(f"🎉 VNC COMPLETO! Acesse: http://31.97.251.184:{self.web_port}/vnc.html")
             return True
             
         except Exception as e:
             print(f"❌ Erro VNC: {e}")
             return False
-    
+
     def start_vnc(self):
-        """Inicia VNC server com resolução 1024x768"""
-        try:
-            print("🚀 Iniciando VNC server...")
-            
-            # Parar Xvfb existente
-            os.system("pkill -f Xvfb")
-            time.sleep(2)
-            
-            # ✅ RESOLUÇÃO 1024x768
-            xvfb_cmd = ["Xvfb", ":1", "-screen", "0", "1000x720x24", "-ac"]
-            subprocess.Popen(xvfb_cmd)
-            time.sleep(3)
-            
-            os.environ["DISPLAY"] = ":1"
-            
-            vnc_cmd = f"x11vnc -display :1 -forever -shared -nopw -listen 0.0.0.0 -rfbport {self.vnc_port} -noxdamage"
-            self.vnc_process = subprocess.Popen(vnc_cmd, shell=True)
-            time.sleep(3)
-            
-            print("✅ VNC iniciado com resolução 1280x720x24")
-            return True
-            
-        except Exception as e:
-            print(f"❌ Erro ao iniciar VNC: {e}")
-            return False
-            
-    def start_websockify(self):
-        """Método alternativo para iniciar WebSockify"""
-        # Já é feito no método start()
-        return True if self.websockify_process else False
+        """Método alternativo mantido para compatibilidade"""
+        return self.start()
             
     def monitor_services(self):
         """Monitora e reinicia serviços se necessário"""
@@ -115,11 +125,11 @@ class VNCManager:
             
             if not self.is_process_running("x11vnc"):
                 print("🔄 VNC caiu, reiniciando...")
-                self.start_vnc()
+                self.start()
                 
             if not self.is_process_running("novnc_proxy"):
                 print("🔄 noVNC caiu, reiniciando...")
-                self.start_websockify()
+                self._start_novnc()
                 
     def stop(self):
         """Para todos os serviços"""
